@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 2020-12-01
 started from:
@@ -9,12 +9,14 @@ this page explains why await bot.process_commands(message) is
 necessary in on_message, and also explains how to make subcommands.
 
 """
+from telnetlib import Telnet
 import re
 import requests
 import random
 import numpy as np
 from envbash import load_envbash
 import os
+import time
 from discord.ext import commands, tasks
 from discord.enums import Status
 
@@ -28,6 +30,7 @@ owner_user_id = int(os.getenv('owner_user_id'))
 # client = discord.Client()
 bot = commands.Bot(command_prefix='!')
 info_dir = os.path.join(os.path.dirname(__file__), 'info')
+
 
 async def get_owner():
     try:
@@ -69,6 +72,53 @@ async def on_ready():
     owner = await get_owner()
     await owner.send(f'hello!!!!! up and running!!!!!!')
 
+async def exhaust_output(tn):
+    total_output = tn.read_eager()
+    print('1', total_output)
+    new_output = total_output
+    while new_output != b'':
+        new_output = tn.read_eager()
+        print('2', new_output)
+        total_output += new_output
+    print('total:', total_output.decode())
+    return total_output.decode()
+
+
+def clean_tn_output(string):
+    return re.sub(r'\[\d{1,2}m\[3\dm|\[0m', '', string)
+
+def get_tn_output(tn):
+    return clean_tn_output(tn.read_very_eager().decode())
+
+delay = 0.5
+def interact_tn(tn, message):
+    tn.write(message.encode())
+    time.sleep(delay)
+    output = get_tn_output(tn)
+    return output
+
+telnet_connections = dict()
+async def process_evennia(ctx):
+    if ctx.author.id not in telnet_connections:
+        tn = Telnet('localhost', 4000)
+        telnet_connections[ctx.author.id] = tn
+        time.sleep(delay)
+        output = get_tn_output(tn)
+        time.sleep(delay)
+        await ctx.channel.send(output)
+        output = interact_tn(tn, f'create {ctx.author.id} c67jHL8p\n')
+        await ctx.channel.send(output)
+        output = interact_tn(tn, f'connect {ctx.author.id} c67jHL8p\n')
+        await ctx.channel.send(output)
+
+    tn = telnet_connections[ctx.author.id]
+    output = interact_tn(tn, ctx.content+'\n')
+    if output:
+        await ctx.channel.send(output)
+    else:
+        await ctx.channel.send('no output for some reason 🤷‍♀️️')
+
+
 @bot.event
 async def on_message(message):
     '''
@@ -92,6 +142,9 @@ async def on_message(message):
             f'message.content: {message.content}'
         )
 
+    if (not message.content.startswith('!')) and message.channel.id == 783554356326301717:
+        await process_evennia(message)
+        return
     # the new versions of discord.py require this to
     # be able to run normal commands in addition to
     # viewing all messsages
