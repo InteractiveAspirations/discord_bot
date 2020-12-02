@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-2020-11-05
+2020-12-01
 started from:
 https://realpython.com/how-to-make-a-discord-bot-python/
 
@@ -227,31 +227,10 @@ class Random(commands.Cog):
         return random.choice(cls.lists[name])
 
     @commands.command()
-    async def house(self, ctx):
-        'a random quote from House MD, from http://www.housemd-guide.com/characters/houserules.php'
-        key = 'house'
-        self.ensure_file_loaded('house_quotes.txt', key)
-        await ctx.send(self.get_random_line(key))
-
-    @commands.command()
     async def m8(self, ctx):
         'shake a magic 8 ball, from http://www.otcpas.com/advisor-blog/magic-8-ball-messages/'
         key = 'm8'
         self.ensure_file_loaded('m8_ball_msgs.txt', key)
-        await ctx.send(self.get_random_line(key))
-
-    @commands.command(aliases=['sw'])
-    async def starwars(self, ctx):
-        'star wars quotes, from https://www.starwars.com/news/40-memorable-star-wars-quotes'
-        key = 'starwars'
-        self.ensure_file_loaded('star_wars_quotes.txt', key)
-        await ctx.send(self.get_random_line(key))
-
-    @commands.command(aliases='doctor who'.split())
-    async def drwho(self, ctx):
-        'Doctor Who quotes from https://www.scarymommy.com/doctor-who-quotes/'
-        key = 'drwho'
-        self.ensure_file_loaded('doctor_who.txt', key)
         await ctx.send(self.get_random_line(key))
 
 

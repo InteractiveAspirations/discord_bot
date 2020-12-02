@@ -1,4 +1,2 @@
 
-
-first take on a discord bot
-
+integration between Evennia MUD and Discord bot
