@@ -13,7 +13,6 @@ from telnetlib import Telnet
 import re
 import requests
 import random
-import numpy as np
 from envbash import load_envbash
 import os
 import time
@@ -402,56 +401,6 @@ class Utilities(commands.Cog):
         )
 
 
-class Information(commands.Cog):
-    @commands.command()
-    async def weather(self, ctx, zipcode):
-        'get the weather for a given zip code'
-        if not zipcode.isnumeric() or len(zipcode) != 5:
-            await ctx.send("invalid zipcode")
-            return
-        await bot.wait_until_ready()
-        resp = requests.get(f'https://wttr.in/{zipcode}')
-        short = resp.text
-        # short = '└'.join(short.split('└', 2)[:2])
-        for color_code in set(re.findall(r'\x1b[^m]+m', short)):
-            short = short.replace(color_code, '')
-
-        longest_line = 0
-        chars = list()
-        for line in short.strip().split('\n'):
-            chars.append(list())
-            longest_line = max(longest_line, len(line))
-            for c in line:
-                chars[-1].append(c)
-        for lst in chars:
-            lst.extend(['']*(longest_line-len(lst)))
-
-        array = np.array(chars)
-
-        days = [
-            'today',
-            'tomorrow',
-            'the day after tomorrow',
-        ]
-        times_of_day = 'morning noon evening night'.split()
-        this_window = ''
-        for day, col in zip(days, range(3)):
-            col *= 10
-            for tod, row in zip(times_of_day, range(4)):
-                row *= 32
-                window = '\n'.join([''.join(l) for l in array[11-1+col:16+col, 2+row:29+row]])
-                window = f'{day} {tod}\n```{window}```\n'
-                if len(this_window) + len(window) > 2000:
-                    await ctx.send(this_window)
-                    this_window = window
-                else:
-                    this_window += window
-
-        # final send
-        await ctx.send(this_window)
-        await ctx.send(f'credits `https://wttr.in` `https://twitter.com/igor_chubin`')
-
-
 @tasks.loop(hours=1)
 async def called_every_10s():
     message_channel = bot.get_channel(774145104365617203)
@@ -466,7 +415,6 @@ if __name__ == '__main__':
     # called_every_10s.start()
     bot.add_cog(Admin(bot))
     bot.add_cog(Utilities(bot))
-    bot.add_cog(Information(bot))
     bot.add_cog(Cute(bot))
     bot.add_cog(Random(bot))
     bot.run(TOKEN)
