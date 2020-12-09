@@ -85,7 +85,14 @@ async def exhaust_output(tn):
 
 
 def clean_tn_output(string):
-    return re.sub(r'\[\d{1,2}m\[3\dm|\[0m', '', string)
+    print(string)
+    replaced_with_ticks = re.sub(
+        r'(\x1b\[\d{1,2}m\x1b\[\d{1,2}m)(.*?)(\x1b\[0m)',
+        r'`\2`',
+        string
+    )
+    remove_remaining_codes = re.sub(r'\x1b\[\d{1,2}m', '', replaced_with_ticks)
+    return remove_remaining_codes
 
 def get_tn_output(tn):
     return clean_tn_output(tn.read_very_eager().decode())
@@ -97,6 +104,20 @@ def interact_tn(tn, message):
     output = get_tn_output(tn)
     return output
 
+async def send_long_message(channel, message):
+    if len(message) <= 2000:
+        await channel.send(message)
+        return
+    lines = message.split('\n')
+    section = ''
+    for line in lines:
+        if len(section) + len(line) > 2000:
+            await channel.send(section)
+            section = ''
+        section += line
+    if section:
+        await channel.send(section)
+
 telnet_connections = dict()
 async def process_evennia(ctx):
     if ctx.author.id not in telnet_connections:
@@ -105,11 +126,11 @@ async def process_evennia(ctx):
         time.sleep(delay)
         output = get_tn_output(tn)
         time.sleep(delay)
-        await ctx.channel.send(output)
+        #await ctx.channel.send(output)
         output = interact_tn(tn, f'create {ctx.author.id} c67jHL8p\n')
-        await ctx.channel.send(output)
+        #await ctx.channel.send(output)
         output = interact_tn(tn, f'connect {ctx.author.id} c67jHL8p\n')
-        await ctx.channel.send(output)
+        await send_long_message(ctx.channel, message=output)
 
     tn = telnet_connections[ctx.author.id]
     output = interact_tn(tn, ctx.content+'\n')
